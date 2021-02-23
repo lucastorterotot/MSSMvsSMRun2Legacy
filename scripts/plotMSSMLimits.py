@@ -39,6 +39,13 @@ parser.add_argument(
     '--pad-style', default=None, help="""Extra style options for the pad, e.g. Grid=(1,1)""")
 parser.add_argument(
     '--auto-style', nargs='?', const='', default=None, help="""Take line colors and styles from a pre-defined list""")
+parser.add_argument(
+    '--extra_contour_file', default=None, help="""Root file containing graphs to be superimposed on plots""")
+parser.add_argument(
+    '--extra_contour_title', default="", help="""Legend label for extra contours""")
+parser.add_argument(
+    '--extra_contour_style', default="", help="""Line style for plotting extra contours""")
+
 args = parser.parse_args()
 
 style_dict_hig_17_020 = {
@@ -162,7 +169,34 @@ for src in args.input:
         graphs[-1].Draw('PLSAME')
         legend.AddEntry(graphs[-1], '', 'PL')
 
+#Get extra contours from file, if provided:
+if args.extra_contour_file is not None:
+    contour_files  = args.extra_contour_file.split(',')
+    extra_contours = []
+    for filename in contour_files:
+        extra_contour_file = ROOT.TFile(filename)
+        extra_contour_file_contents = extra_contour_file.GetListOfKeys()
+        extra_contour_names = []
+        for i in range(0,len(extra_contour_file_contents)):
+            extra_contour_names.append(extra_contour_file_contents[i].GetName())
+            extra_contours_per_index = [extra_contour_file.Get(c) for c in extra_contour_names]
+        extra_contours.append(extra_contours_per_index)
+else:
+    extra_contours = None
 
+if extra_contours is not None:
+    if args.extra_contour_style is not None: 
+        contour_styles = args.extra_contour_style.split(',')
+    for i in range(0,len(extra_contours)):
+        for gr in extra_contours[i]:
+            plot.Set(gr,LineWidth=2,LineColor=ROOT.kBlue,LineStyle=int(contour_styles[i]))
+            gr.Draw('LSAME')
+   
+if extra_contours is not None:
+    if args.extra_contour_title is not None: 
+        contour_title = args.extra_contour_title.split(',')
+    for i in range(0,len(contour_title)): 
+        legend.AddEntry(extra_contours[i][0],contour_title[i],"L")
 
 axis[0].GetYaxis().SetTitle('95% CL limit on #sigma#font[42]{(gg#phi)}#upoint#font[42]{BR}#font[42]{(#phi#rightarrow#tau#tau)} [pb]')
 if args.process == "bb#phi":
