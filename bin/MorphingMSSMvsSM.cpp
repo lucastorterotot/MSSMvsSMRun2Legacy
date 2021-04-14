@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
   bkg_procs["tt"] = bkgs_tt;
   bkg_procs["em"] = bkgs_em;
 
-  if(analysis == "sm"){
+  if(analysis == "sm" || analysis == "cut_based_sm"){
     for(auto chn : chns){
         bkg_procs[chn] = JoinStr({bkg_procs[chn],sm_signals});
     }
@@ -349,6 +349,70 @@ int main(int argc, char **argv) {
       {20, "em_emb"}
     };
   }
+  else if(analysis == "cut_based_sm"){
+    cats["et"] = {
+      //{ 1, "et_wjets_control"},
+
+      {10, "et_NJets0_MTLt40"},
+      {11, "et_NJets0_MT40To70"},
+
+      {12, "et_NJetsGt0_DeltaRGt2p5"},
+
+      {13, "et_NJets1_PTHLt120"},
+      {14, "et_NJets1_PTH120To200"},
+      {15, "et_NJets1_PTHGt200"},
+
+      {16, "et_NJetsGt1_MJJLt350"},
+      {17, "et_NJetsGt1_MJJ350To1000"},
+      {18, "et_NJetsGt1_MJJGt1000"},
+    };
+    cats["mt"] = {
+      //{ 1, "mt_wjets_control"},
+
+      {10, "mt_NJets0_MTLt40"},
+      {11, "mt_NJets0_MT40To70"},
+
+      {12, "mt_NJetsGt0_DeltaRGt2p5"},
+
+      {13, "mt_NJets1_PTHLt120"},
+      {14, "mt_NJets1_PTH120To200"},
+      {15, "mt_NJets1_PTHGt200"},
+
+      {16, "mt_NJetsGt1_MJJLt350"},
+      {17, "mt_NJetsGt1_MJJ350To1000"},
+      {18, "mt_NJetsGt1_MJJGt1000"},
+    };
+    cats["tt"] = {
+      {10, "tt_Njets0_DeltaRLt3p2"},
+
+      {11, "tt_NJets1_DeltaR2p5To3p2_PTHLt100"},
+      {12, "tt_NJets1_DeltaRLt2p5_PTHLt100"},
+      {13, "tt_NJets1_DeltaRLt3p2_PTHGt100"},
+
+      {14, "tt_NjetsGt2_DeltaRLt2p5_MJJGt350_EtaJJGt4"},
+      {15, "tt_NjetsGt2_DeltaRLt2p5_MJJGt350_EtaJJLt4"},
+      {16, "tt_NjetsGt2_DeltaRLt2p5_MJJLt350"},
+
+      {17, "tt_NjetsLt2_DeltaRGt3p2_NjetsGt2_DeltaGt2p5"},
+    };
+    cats["em"] = {
+      //{ 1, "em_ttbar_control"},
+
+      {10, "em_NJets0_DZetam35Tom10_PTHGt10"},
+      {11, "em_NJets0_DZetam35Tom10_PTHLt10"},
+      {12, "em_NJets0_DZetamGtm10_PTHGt10"},
+      {13, "em_NJets0_DZetamGtm10_PTHLt10"},
+
+      {14, "em_NJets1_PTH120To200"},
+      {15, "em_NJets1_PTH40To120"},
+      {16, "em_NJets1_PTHGt200"},
+      {17, "em_NJets1_PTHLt40"},
+
+      {18, "em_NJetsGt2_MJJGt350"},
+      {19, "em_NJetsGt2_MJJLt350"},
+
+    };
+  }
   else if(analysis == "mssm_vs_sm" || analysis == "mssm_vs_sm_h125" || analysis == "mssm"){
     cats["et"] = {
         { 1, "et_xxh"}, // SM Signal Category
@@ -419,6 +483,8 @@ int main(int argc, char **argv) {
 
   // Introduce ordering of categories for the final discriminator in MSSM
   std::vector<int> sm_categories = {2,13,14,15,16,19,20,21}; // Control regions from the ML SM HTT analysis
+  std::vector<int> cut_based_sm_categories = {10,11,12,13,14,15,16,17,18,19} ; // Cut_based_sm categories
+  std::vector<int> cut_based_sm_categories_CR = {1}; // cut_based_sm CR categories
   std::vector<int> mssm_btag_categories = {35,36,37}; // b-tagged MSSM-like categories with mt_tot as discriminator
   std::vector<int> mssm_nobtag_categories = {32,33,34}; // non-btagged MSSM-like categories with mt_tot as discriminator
   std::vector<int> sm_signal_category = {1}; // category for the SM signal
@@ -430,6 +496,8 @@ int main(int argc, char **argv) {
     Categories mssm_btag_cats = cats[chn]; // contain 1, 35-37
     Categories mssm_cats = cats[chn]; // contain 32-37
     Categories sm_signal_cat = cats[chn]; // contain 1, 32-37
+    Categories cut_based_sm_cats = cats[chn];
+    Categories cut_based_sm_cats_CR = cats[chn];
     for (auto catit = sm_signal_cat.begin(); catit != sm_signal_cat.end(); ++catit)
     {
       if(std::find(sm_categories.begin(), sm_categories.end(), (*catit).first) != sm_categories.end()){
@@ -504,14 +572,14 @@ int main(int argc, char **argv) {
     cb.AddObservations({"*"}, {"htt"}, {era_tag}, {chn}, cats[chn]);
     cb.AddProcesses({"*"}, {"htt"}, {era_tag}, {chn}, bkg_procs[chn], cats[chn], false);
     // currently possible analysis:
-    // 1. sm
+    // 1. sm, cut_based_sm
     // 2. mssm
     // 3. mssm_classic
     // 3. mssm_vs_sm_h125
     // 4. mssm_vs_sm
 
 
-    if(analysis == "sm"){
+    if(analysis == "sm" || analysis == "cut_based_sm"){
       cb.AddProcesses({""}, {"htt"}, {era_tag}, {chn}, main_sm_signals, cats[chn], true);
     }
     if(analysis == "mssm"){
@@ -581,7 +649,7 @@ int main(int argc, char **argv) {
     cb.cp().channel({chn}).backgrounds().ExtractShapes(
       input_file_base, "$BIN/$PROCESS", "$BIN/$PROCESS_$SYSTEMATIC");
 
-    if(analysis == "sm"){
+    if(analysis == "sm" || analysis == "cut_based_sm"){
       cb.cp().channel({chn}).process(main_sm_signals).ExtractShapes(
         input_file_base, "$BIN/$PROCESS$MASS", "$BIN/$PROCESS$MASS_$SYSTEMATIC");
     }
@@ -887,7 +955,7 @@ int main(int argc, char **argv) {
       total_procs_shape.Reset("M");
       std::cout << "[INFO] Integral of initial asimov data shape in bin " << b << ": " << total_procs_shape.Integral()  << "\n";
       // Desired Asimov model: BG + Higgs. Since ggH and qqH H->tautau treated as signal, remaining Higgs processes as BG. Need to access the signals() + bg shapes
-      if(analysis == "sm"){
+      if(analysis == "sm" || analysis == "cut_based_sm"){
         auto signal_shape = cb.cp().bin({b}).signals().GetShape();
         std::cout << "[INFO] Integral of SM HTT shapes treated as signal  in bin " << b << ": " << signal_shape.Integral()  << "\n";
         bool no_signal = (signal_shape.GetNbinsX() == 1 && signal_shape.Integral() == 0.0);
